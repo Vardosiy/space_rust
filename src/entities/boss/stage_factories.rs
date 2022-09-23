@@ -4,9 +4,9 @@ use super::BossStagesFactory;
 use super::easy_stages::*;
 
 pub struct EasyBossStageFactory;
-impl StageFactory for EasyBossStageFactory {
+impl BossStagesFactory for EasyBossStageFactory {
     fn create(&self, idx: i32) -> Box<dyn BossStage> {
-        let stage: dyn BossStage = match idx {
+        let stage = match idx {
             0 => AppearStage::new(),
             1 => SimpleShootingDown::new(),
             2 => SpreadShooting::new(),

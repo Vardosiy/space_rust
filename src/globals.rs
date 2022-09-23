@@ -7,7 +7,8 @@ pub fn screen_size() -> Vec2i {
         return g_screen_size.clone();
     }
 }
-pub fn screen_rect() -> Rect {
+
+pub fn screen_rect() -> Rect {  // TODO change this to a common coords
     Rect{
         top_left: Vec2i { x: 0, y: 0 },
         bottom_right: screen_size()

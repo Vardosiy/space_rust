@@ -1,11 +1,15 @@
 use crate::math::Vec2i;
 use crate::math::Rect;
 
+//-----------------------------------------------------------------------------
+
 #[derive(Clone)]
 pub struct Shape {
-    pub pos: Vec2i,
-    pub width: i32,
+    pos: Vec2i,
+    width: i32,
 }
+
+//-----------------------------------------------------------------------------
 
 impl Shape {
     pub fn new(pos: Vec2i, width: i32) -> Shape {
@@ -29,6 +33,8 @@ impl Shape {
         self.in_rect(&appear_bound)
     }
 }
+
+//-----------------------------------------------------------------------------
 
 pub trait Shaped {
     fn shape(&self) -> &Shape;

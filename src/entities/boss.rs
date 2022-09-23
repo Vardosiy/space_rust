@@ -7,6 +7,7 @@ use boss_stages::{BossStage, BossStagesFactory};
 use super::shape::{Shape, Shaped};
 use super::ship::Ship;
 use super::shot::Shot;
+use super::destroyable::Destroyable;
 
 pub struct Boss {
     shape: Shape,
@@ -21,10 +22,22 @@ pub struct Boss {
 
 impl Shaped for Boss {
     fn shape(&self) -> &Shape {
-        &shape
+        &self.shape
     }
     fn shape_mut(&mut self) -> &mut Shape {
-        &mut shape
+        &mut self.shape
+    }
+}
+
+impl Destroyable for Boss {
+    fn hp(&self) -> i32 {
+        self.hp
+    }
+    fn hp_mut(&mut self) -> &mut i32 {
+        &mut self.hp
+    }
+    fn hp_max(&self) -> i32 {
+        self.max_hp
     }
 }
 
@@ -42,24 +55,11 @@ impl Boss {
         }
     }
 
-    pub fn hp(&self) -> i32 {
-        self.hp
-    }
-    pub fn max_hp(&self) -> i32 {
-        self.max_hp
-    }
-
-    pub fn hit(&mut self, damage: i32) {
-        self.hp -= damage;
-    }
-    pub fn alive(&self) -> bool {
-        self.hp > 0
-    }
-
-    pub fn update_pos(&mut self, ship: &Ship) {
+    pub fn fly(&mut self, ship: &Ship) {
         let new_pos = self.stage.calc_new_pos(&self, &ship);
         self.set_pos(new_pos);
     }
+
     pub fn shoot(&mut self, ship: &Ship) -> Option<Vec<Shot>> {
         self.stage.shoot(&self, &ship)
     }

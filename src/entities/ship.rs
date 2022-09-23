@@ -1,3 +1,4 @@
+use super::destroyable::Destroyable;
 use super::shape::Shape;
 use super::shape::Shaped;
 
@@ -7,6 +8,7 @@ pub struct Ship {
     shape: Shape,
 
     hp: i32,
+    hp_max: i32,
     last_time_hit: Instant,
 }
 
@@ -19,19 +21,27 @@ impl Shaped for Ship {
     }
 }
 
+impl Destroyable for Ship {
+    fn hp(&self) -> i32 {
+        self.hp
+    }
+
+    fn hp_mut(&mut self) -> &mut i32 {
+        &mut self.hp
+    }
+
+    fn hp_max(&self) -> i32 {
+        self.hp_max
+    }
+}
+
 impl Ship {
     pub fn new(shape: Shape, hp: i32) -> Ship {
         Ship {
             shape,
             hp,
+            hp_max: hp,
             last_time_hit: Instant::now(),
         }
-    }
-
-    pub fn hit(&mut self, damage: i32) {
-        self.hp -= damage;
-    }
-    pub fn alive(&self) -> bool {
-        self.hp > 0
     }
 }

@@ -1,5 +1,4 @@
-use super::shape::Shape;
-use super::shape::Shaped;
+use super::shape::{Shape, Shaped};
 
 pub struct Shot {
     shape: Shape,
@@ -36,5 +35,9 @@ impl Shot {
         pos.x += self.speed * angle_rad.sin();
         pos.y -= self.speed * angle_rad.cos();
         self.set_pos(pos);
+    }
+
+    pub fn damage(&self) {
+        self.damage
     }
 }

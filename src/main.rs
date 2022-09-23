@@ -4,10 +4,14 @@ mod game;
 mod math;
 mod levels;
 mod globals;
+mod player_ship_controller;
 
-use game::Game;
+mod app;
 
 fn main() {
-    let mut game = Game::new();
-    game.update();
+    let mut game = game::Game::new();
+    // TODO need some input handling and re-rendering
+    loop {
+        game.update();
+    }
 }

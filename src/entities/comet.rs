@@ -1,4 +1,5 @@
 use rand::Rng;
+use rand::distributions::{Distribution, Standard};
 
 use super::shape::{Shape, Shaped};
 
@@ -9,6 +10,16 @@ use crate::math::Vec2i;
 pub enum CometKind {
     Simple,
     Double,
+}
+
+impl Distribution<CometKind> for Standard {
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> CometKind {
+        match rng.gen_range(0..1) {
+            0 => CometKind::Simple,
+            1 => CometKind::Double,
+            _ => CometKind::Simple
+        }
+    }
 }
 
 pub struct Comet {
@@ -60,11 +71,13 @@ impl Comet {
 
     pub fn fly(&mut self) {
         let angle_rad = (self.angle as f32).to_radians();
+        let x_diff = (self.speed as f32) * angle_rad.sin();
+        let y_diff =  (self.speed as f32) * angle_rad.cos();
 
-        let mut pos = self.pos();
-        pos.x += self.speed * angle_rad.sin();
-        pos.y -= self.speed * angle_rad.cos();
-        self.set_pos(pos);
+        let mut pos = self.shape.pos();
+        pos.x += x_diff as i32;
+        pos.y -= y_diff as i32;
+        self.shape.set_pos(pos);
     }
 
     pub fn spawn_shards(&self) -> Option<Vec<Comet>> {
@@ -75,11 +88,11 @@ impl Comet {
                 let shard1_angle_delta = rng.gen_range(0..COMET_SHARD_MAX_ANGLE_DELTA);
                 let shard2_angle_delta = rng.gen_range(0..-COMET_SHARD_MAX_ANGLE_DELTA);
 
-                let mut result;
-                for angle_delta in (shard1_angle_delta, shard2_angle_delta) {
-                    let shardKind = CometKind::Simple;
-                    let shard = Comet::new(shardKind, self.pos, self.angle, self.speed);
-                    result.append(shard);
+                let mut result = vec![];
+                for angle_delta in [shard1_angle_delta, -shard2_angle_delta] {
+                    let shard_kind = CometKind::Simple;
+                    let shard = Comet::new(shard_kind, self.shape.pos(), self.angle + angle_delta, self.speed);
+                    result.push(shard);
                 }
 
                 Some(result)

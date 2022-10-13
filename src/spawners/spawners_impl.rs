@@ -1,12 +1,12 @@
 use crate::entities::comet::{Comet, CometKind};
-use crate::entities::shape::{Shape, Shaped};
+use crate::entities::shape::Shape;
 use crate::entities::boss::Boss;
 use crate::entities::boss::stage_factories::*;
-use crate::math::Vec2i;
 
 use crate::globals::screen_size;
+use crate::math::Vec2i;
 
-use super::level::Level;
+use super::Spawner;
 
 use rand::Rng;
 
@@ -36,54 +36,52 @@ fn spawn_comet_common(kind: CometKind, min_speed: i32) -> Comet {
 
 //-----------------------------------------------------------------------------
 
-struct LevelEasy;
-impl Level for LevelEasy {
-    fn boss_spawn_points() -> i32 {
+pub struct EasyLevelSpawner;
+impl Spawner for EasyLevelSpawner {
+    fn boss_spawn_points(&self) -> i32 {
         EASY_LEVEL_BOSS_SPAWN_POINTS
     }
 
-    fn spawn_comet(min_speed: i32) -> Comet {
+    fn spawn_comet(&self, min_speed: i32) -> Comet {
         spawn_comet_common(CometKind::Simple, min_speed)
     }
 
-    fn spawn_boss() -> Boss {
+    fn spawn_boss(&self) -> Boss {
         let spawn_x = screen_size().x / 2 + EASY_LEVEL_BOSS_WIDTH / 2;
-        let shape = Shape {
-            pos: Vec2i { x: spawn_x, y: -EASY_LEVEL_BOSS_WIDTH },
-            width: EASY_LEVEL_BOSS_WIDTH,
-        };
-        Boss::new(shape, EASY_LEVEL_BOSS_MAX_HP, Box::new(EasyBossStageFactory{}))
+        let pos =Vec2i { x: spawn_x, y: -EASY_LEVEL_BOSS_WIDTH };
+        let boss_shape = Shape::new(pos, EASY_LEVEL_BOSS_WIDTH);
+        Boss::new(boss_shape, EASY_LEVEL_BOSS_MAX_HP, Box::new(EasyBossStageFactory{}))
     }
 }
 
-struct LevelMedium;
-impl Level for LevelMedium {
-    fn boss_spawn_points() -> i32 {
+pub struct MediumLevelSpawner;
+impl Spawner for MediumLevelSpawner {
+    fn boss_spawn_points(&self) -> i32 {
         MEDIUM_LEVEL_BOSS_SPAWN_POINTS
     }
 
-    fn spawn_comet(min_speed: i32) -> Comet {
+    fn spawn_comet(&self, min_speed: i32) -> Comet {
         let kind = rand::random::<CometKind>();
         spawn_comet_common(kind, min_speed)
     }
 
-    fn spawn_boss() -> Boss {
+    fn spawn_boss(&self) -> Boss {
         todo!()
     }
 }
 
-struct FreeLevel;
-impl Level for FreeLevel {
-    fn boss_spawn_points() -> i32 {
+pub struct FreeLevelSpawner;
+impl Spawner for FreeLevelSpawner {
+    fn boss_spawn_points(&self) -> i32 {
         FREE_LEVEL_BOSS_SPAWN_POINTS
     }
 
-    fn spawn_comet(min_speed: i32) -> Comet {
+    fn spawn_comet(&self, min_speed: i32) -> Comet {
         let kind = rand::random::<CometKind>();
         spawn_comet_common(kind, min_speed)
     }
 
-    fn spawn_boss() -> Boss {
+    fn spawn_boss(&self) -> Boss {
         panic!("This should never happen")
     }
 }

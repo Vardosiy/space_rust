@@ -6,14 +6,12 @@ use super::easy_stages::*;
 pub struct EasyBossStageFactory;
 impl BossStagesFactory for EasyBossStageFactory {
     fn create(&self, idx: i32) -> Box<dyn BossStage> {
-        let stage = match idx {
-            0 => AppearStage::new(),
-            1 => SimpleShootingDown::new(),
-            2 => SpreadShooting::new(),
-            3 => Targeted::new(),
+        match idx {
+            0 => Box::new(AppearStage::new()),
+            1 => Box::new(SimpleShootingDown::new()),
+            2 => Box::new(SpreadShooting::new()),
+            3 => Box::new(Targeted::new()),
             _ => panic!("Index out of range")
-        };
-
-        Box::new(stage)
+        }
     }
 }

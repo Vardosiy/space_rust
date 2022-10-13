@@ -30,14 +30,16 @@ impl Shot {
 
     pub fn fly(&mut self) {
         let angle_rad = (self.angle as f32).to_radians();
+        let x_diff = (self.speed as f32) * angle_rad.sin();
+        let y_diff =  (self.speed as f32) * angle_rad.cos();
 
-        let mut pos = self.pos();
-        pos.x += self.speed * angle_rad.sin();
-        pos.y -= self.speed * angle_rad.cos();
-        self.set_pos(pos);
+        let mut pos = self.shape.pos();
+        pos.x += x_diff as i32;
+        pos.y -= y_diff as i32;
+        self.shape.set_pos(pos);
     }
 
-    pub fn damage(&self) {
+    pub fn damage(&self) -> i32 {
         self.damage
     }
 }

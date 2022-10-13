@@ -1,10 +1,11 @@
 use std::rc::Rc;
 
-use crate::entities::{ship::Ship, shape::Shaped};
+use crate::constants::SHIP_MOVE_STEP;
+use crate::entities::shape::Shaped;
+use crate::entities::ship::Ship;
+use crate::input_mgr::InputMgr;
 
-const SHIP_MOVE_STEP: i32 = 5; // TODO fix costant value
-
-struct PlayerShipController {
+pub struct PlayerShipController {
     input_mgr: Rc<InputMgr>
 }
 
@@ -14,22 +15,12 @@ impl PlayerShipController {
     }
 
     pub fn update(&self, ship: &mut Ship) {
-        let pos = ship.pos();
-
-        if self.input_mgr.is_pressed('A') {
-            pos.x -= SHIP_MOVE_STEP;
-        }
-        if self.input_mgr.is_pressed('D') {
-            pos.x += SHIP_MOVE_STEP;
-        }
-
-        if self.input_mgr.is_pressed('W') {
-            pos.y += SHIP_MOVE_STEP;
-        }
-        if self.input_mgr.is_pressed('S') {
-            pos.y -= SHIP_MOVE_STEP;
-        }
-
-        ship.set_pos(pos);
+        let shape = ship.shape_mut();
+        let mut new_pos = shape.pos();
+        new_pos.x -= SHIP_MOVE_STEP * self.input_mgr.is_pressed('A') as i32;
+        new_pos.x += SHIP_MOVE_STEP * self.input_mgr.is_pressed('D') as i32;
+        new_pos.y += SHIP_MOVE_STEP * self.input_mgr.is_pressed('W') as i32;
+        new_pos.y -= SHIP_MOVE_STEP * self.input_mgr.is_pressed('S') as i32;
+        shape.set_pos(new_pos);
     }
 }

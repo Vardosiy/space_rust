@@ -1,16 +1,23 @@
+use std::rc::Rc;
+
 use crate::entities::shape::{Shape, Shaped};
+use crate::entities::destroyable::Destroyable;
 use crate::entities::comet::Comet;
 use crate::entities::ship::Ship;
 use crate::entities::shot::Shot;
 use crate::entities::boss::Boss;
 
-use crate::levels::level::Level;
-use crate::math::Vec2i;
+use crate::player_ship_controller::PlayerShipController;
+use crate::spawners::Spawner;
+use crate::spawners::spawners_impl::*;
 
-use crate::globals::{screen_rect, screen_size};
+use crate::input_mgr::InputMgr;
+use crate::globals::screen_rect;
+
+use crate::math::Vec2i;
 use crate::constants::*;
 
-pub struct Game {
+pub struct GameLevel {
     comets: Vec<Comet>,
 
     ship: Ship,
@@ -21,17 +28,27 @@ pub struct Game {
     boss_shots: Vec<Shot>,
     boss_defeated: bool,
 
-    level: Box<dyn Level>,
+    spawner: Box<dyn Spawner>,
 }
 
-impl Game {
-    pub fn new() -> Game {
+impl GameLevel {
+    pub fn new(input_mgr: Rc<InputMgr>) -> GameLevel {
         let ship_shape = Shape::new(Vec2i { x: 0, y: 0 }, SHIP_WIDTH);
-        Game {
+        let ship = Ship::new(ship_shape, SHIP_MAX_HP);
+
+        let ship_controller = PlayerShipController::new(Rc::clone(&input_mgr));
+        let spawner = Box::new(EasyLevelSpawner{});
+        GameLevel {
             comets: vec![],
             ship_shots: vec![],
-            ship: Ship::new(ship_shape, SHIP_MAX_HP),
-            boss: None
+            ship,
+            ship_controller,
+
+            boss: None,
+            boss_shots: vec![],
+            boss_defeated: false,
+
+            spawner,
         }
     }
 
@@ -64,10 +81,10 @@ impl Game {
         self.comets.iter_mut().for_each(|comet| comet.fly());
         self.ship_shots.iter_mut().for_each(|shot| shot.fly());
 
-        self.ship_controller.update(self.ship);
+        self.ship_controller.update(&mut self.ship);
 
-        if let Some(boss) = &self.boss {
-            self.boss.fly();
+        if let Some(boss) = &mut self.boss {
+            boss.fly(&self.ship);
         }
     }
 
@@ -88,12 +105,13 @@ impl Game {
             !intersects
         });
 
+        let comets = &mut self.comets;
         self.ship_shots.retain(|shot| {
-            let remove = self.destroy_comets_by_shot(shot);
+            let remove = GameLevel::destroy_comets_by_shot(comets, shot);
             !remove
         });
 
-        if let Some(boss) = &self.boss {  // TODO: play with borriwng here
+        if let Some(boss) = &mut self.boss {  // TODO: play with borriwng here
             self.ship_shots.retain(|shot| {
                 let intersects = boss.intersects(shot);
                 if intersects {
@@ -113,19 +131,19 @@ impl Game {
         let screen_rect = screen_rect();
 
         self.ship_shots.retain(|shot| {
-            shot.appear_in_rect(&screen_rect)
+            shot.shape().appear_in_rect(&screen_rect)
         });
         self.comets.retain(|comet| {
-            comet.appear_in_rect(&screen_rect)
+            comet.shape().appear_in_rect(&screen_rect)
         });
     }
 
-    fn destroy_comets_by_shot(&mut self, shot: &Shot) -> bool {
-        let idx = self.comets.iter().position(|x| x.intersects(shot));
+    fn destroy_comets_by_shot(comets: &mut Vec<Comet>, shot: &Shot) -> bool {
+        let idx = comets.iter().position(|x| x.intersects(shot));
         if let Some(idx) = idx {
-            let destroyed = self.comets.remove(idx);
-            if let Some(shards_from_destoryed) = destroyed.spawn_shards() {
-                self.comets.append(&mut shards_from_destoryed);
+            let destroyed = comets.remove(idx);
+            if let Some(mut shards_from_destroyed) = destroyed.spawn_shards() {
+                comets.append(&mut shards_from_destroyed);
             }
             return true;
         }
@@ -136,14 +154,14 @@ impl Game {
     fn spawn_entities(&mut self) {
         let player_points = 10;  // TODO implement player_points
 
-        if player_points >= self.level.boss_spawn_points() {
-            self.boss = self.level.spawn_boss();
+        if player_points >= self.spawner.boss_spawn_points() {
+            self.boss = Some(self.spawner.spawn_boss());
         }
 
         if self.boss.is_none() {
-            let comet_limit = self.level.calc_comets_limit(player_points);
-            if self.comets.len() < comet_limit {
-                self.comets.push(self.level.spawn_comet())
+            let comets_limit = self.spawner.calc_comets_limit(player_points);
+            if self.comets.len() < comets_limit as usize {
+                self.comets.push(self.spawner.spawn_comet(3))
             }
         }
     }

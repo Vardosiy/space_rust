@@ -25,11 +25,9 @@ impl Destroyable for Ship {
     fn hp(&self) -> i32 {
         self.hp
     }
-
     fn hp_mut(&mut self) -> &mut i32 {
         &mut self.hp
     }
-
     fn hp_max(&self) -> i32 {
         self.hp_max
     }

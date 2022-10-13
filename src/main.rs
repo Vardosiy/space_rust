@@ -1,17 +1,14 @@
 mod constants;
 mod entities;
-mod game;
+mod game_level;
 mod math;
-mod levels;
+mod spawners;
 mod globals;
 mod player_ship_controller;
 
 mod app;
+mod input_mgr;
 
 fn main() {
-    let mut game = game::Game::new();
-    // TODO need some input handling and re-rendering
-    loop {
-        game.update();
-    }
+    app::App::new().run()
 }

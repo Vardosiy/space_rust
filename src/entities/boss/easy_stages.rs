@@ -1,11 +1,12 @@
 use std::time::{Duration, Instant};
 
-use crate::constants::{SHOT_SPEED, SHOT_WIDTH};
 use crate::entities::shape::{Shape, Shaped};
+use crate::entities::destroyable::Destroyable;
 use crate::entities::ship::Ship;
 use crate::entities::shot::Shot;
+
 use crate::globals::screen_rect;
-use crate::math::Vec2i;
+use crate::constants::{SHOT_SPEED, SHOT_WIDTH};
 
 use super::boss_stages::BossStage;
 use super::Boss;
@@ -41,65 +42,69 @@ enum Direction {
     Right,
 }
 
-fn move_horizontally<T>(stage: &mut T, boss: &Boss, move_speed: i32) -> Vec2i {
-    let x_offset = match stage.direction {
+fn move_horizontally(direction: &mut Direction, boss_shape: &mut Shape, move_speed: i32) {
+    let x_offset = match direction {
         Direction::Left => -move_speed,
         Direction::Right => move_speed,
     };
 
-    let mut new_shape = boss.shape().clone();
+    let mut new_pos = boss_shape.pos();
     let screen_rect = screen_rect();
 
-    new_shape.pos.x += x_offset;
-    if !new_shape.in_rect(&screen_rect) {
-        new_shape.pos.x -= x_offset * 2;
-        stage.direction = match stage.direction {
+    new_pos.x += x_offset;
+    boss_shape.set_pos(new_pos);
+    if !boss_shape.in_rect(&screen_rect) {
+        new_pos.x -= x_offset * 2;
+        boss_shape.set_pos(new_pos);
+        *direction = match direction {
             Direction::Left => Direction::Right,
             Direction::Right => Direction::Left,
         };
     }
-
-    new_shape.pos
 }
 
 //-----------------------------------------------------------------------------
 
-fn shoot_down<T>(stage: &mut T, boss: &Boss, shooting_interval: Duration) -> Option<Vec<Shot>> {
+fn shoot_down(shoot_time: &mut Instant, boss_shape: &Shape, shooting_interval: Duration) -> Option<Vec<Shot>> {
     let now = Instant::now();
-    if stage.shoot_time + shooting_interval <= now {
-        stage.shoot_time = now;
+    if *shoot_time + shooting_interval <= now {
+        *shoot_time = now;
 
-        let shot = make_boss_shot(&boss, ANGLE_DOWN);
+        let shot = make_boss_shot(&boss_shape, ANGLE_DOWN);
         return Some(vec![shot]);
     }
 
     None
 }
 
-fn make_boss_shot(boss: &Boss, angle: i32) -> Shot {
-    let shot_shape = Shape::new(boss.center(), SHOT_WIDTH);
+fn make_boss_shot(boss_shape: &Shape, angle: i32) -> Shot {
+    let shot_shape = Shape::new(boss_shape.center(), SHOT_WIDTH);
     Shot::new(shot_shape, SHOT_SPEED, angle, BOSS_DAMAGE)
 }
 
 //-----------------------------------------------------------------------------
 
 pub struct AppearStage;
-impl BossStage for AppearStage {
-    fn calc_new_pos(&mut self, boss: &Boss, ship: &Ship) -> Vec2i {
-        let mut new_pos = boss.pos();
-        if !self.completed(&boss) {
-            new_pos.y += APPEAR_MOVE_SPEED;
-        }
 
-        new_pos
+impl AppearStage {
+    pub fn new() -> Self {
+        Self{}
+    }
+}
+
+impl BossStage for AppearStage {
+    fn update_pos(&mut self, boss_shape: &mut Shape, ship: &Ship) {
+        let mut new_pos = boss_shape.pos();
+        new_pos.y = (new_pos.y + APPEAR_MOVE_SPEED).clamp(0, APPEAR_TARGET_HEIGHT);
+        boss_shape.set_pos(new_pos)
     }
 
-    fn shoot(&mut self, boss: &Boss, ship: &Ship) -> Option<Vec<Shot>> {
+    fn shoot(&mut self, boss_shape: &Shape, ship: &Ship) -> Option<Vec<Shot>> {
         None
     }
 
     fn completed(&self, boss: &Boss) -> bool {
-        boss.pos().y > APPEAR_TARGET_HEIGHT
+        boss.shape().pos().y > APPEAR_TARGET_HEIGHT
     }
 }
 
@@ -112,7 +117,7 @@ pub struct SimpleShootingDown {
 
 impl SimpleShootingDown {
     pub fn new() -> Self {
-        SimpleShootingDown {
+        Self {
             direction: Direction::Right,
             shoot_time: Instant::now(),
         }
@@ -120,12 +125,12 @@ impl SimpleShootingDown {
 }
 
 impl BossStage for SimpleShootingDown {
-    fn calc_new_pos(&mut self, boss: &Boss, ship: &Ship) -> Vec2i {
-        move_horizontally(&mut self, boss, SIMPLE_SHOOTING_STAGE_MOVE_SPEED)
+    fn update_pos(&mut self, boss_shape: &mut Shape, ship: &Ship) {
+        move_horizontally(&mut self.direction, boss_shape, SIMPLE_SHOOTING_STAGE_MOVE_SPEED)
     }
 
-    fn shoot(&mut self, boss: &Boss, ship: &Ship) -> Option<Vec<Shot>> {
-        shoot_down(&mut self, &boss, SIMPLE_SHOOTING_STAGE_SHOOTING_INTERVAL)
+    fn shoot(&mut self, boss_shape: &Shape, ship: &Ship) -> Option<Vec<Shot>> {
+        shoot_down(&mut self.shoot_time, &boss_shape, SIMPLE_SHOOTING_STAGE_SHOOTING_INTERVAL)
     }
 
     fn completed(&self, boss: &Boss) -> bool {
@@ -142,7 +147,7 @@ pub struct SpreadShooting {
 
 impl SpreadShooting {
     pub fn new() -> Self {
-        SpreadShooting {
+        Self {
             direction: Direction::Right,
             shoot_time: Instant::now(),
         }
@@ -150,11 +155,11 @@ impl SpreadShooting {
 }
 
 impl BossStage for SpreadShooting {
-    fn calc_new_pos(&mut self, boss: &Boss, ship: &Ship) -> Vec2i {
-        move_horizontally(&mut self, boss, SPREAD_SHOOTING_STAGE_MOVE_SPEED)
+    fn update_pos(&mut self, boss_shape: &mut Shape, ship: &Ship) {
+        move_horizontally(&mut self.direction, boss_shape, SPREAD_SHOOTING_STAGE_MOVE_SPEED)
     }
 
-    fn shoot(&mut self, boss: &Boss, ship: &Ship) -> Option<Vec<Shot>> {
+    fn shoot(&mut self, boss_shape: &Shape, ship: &Ship) -> Option<Vec<Shot>> {
         let now = Instant::now();
         if self.shoot_time + SPREAD_SHOOTING_STAGE_SHOOTING_INTERVAL > now {
             return None;
@@ -167,7 +172,7 @@ impl BossStage for SpreadShooting {
 
         let mut shots = vec![];
         for shot_angle in (angle_start..=angle_end).step_by(SPREAD_SHOOTING_ANGLE_STEP) {
-            let shot = make_boss_shot(&boss, shot_angle);
+            let shot = make_boss_shot(&boss_shape, shot_angle);
             shots.push(shot);
         }
 
@@ -187,21 +192,21 @@ pub struct Targeted {
 
 impl Targeted {
     pub fn new() -> Self {
-        Targeted {
+        Self {
             shoot_time: Instant::now(),
         }
     }
 }
 
 impl BossStage for Targeted {
-    fn calc_new_pos(&mut self, boss: &Boss, ship: &Ship) -> Vec2i {
-        let boss_center = boss.center();
-        let ship_center = ship.center();
+    fn update_pos(&mut self, boss_shape: &mut Shape, ship: &Ship) {
+        let boss_center = boss_shape.center();
+        let ship_center = ship.shape().center();
         let diff_x = boss_center.x - ship_center.x;
 
-        let mut result = boss.pos();
+        let mut result = boss_shape.pos();
         if diff_x.abs() < TARGETED_STAGE_MOVE_SPEED {
-            result.x = ship_center.x - boss.width() / 2;
+            result.x = ship_center.x - boss_shape.width() / 2;
         } else {
             result.x += if diff_x > 0 {
                 TARGETED_STAGE_MOVE_SPEED
@@ -211,15 +216,13 @@ impl BossStage for Targeted {
         }
 
         let screen_rect = screen_rect();
-        result.x = result
-            .x
-            .clamp(screen_rect.top_left.x, screen_rect.bottom_right.x);
+        result.x = result.x.clamp(screen_rect.top_left.x, screen_rect.bottom_right.x);
 
-        result
+        boss_shape.set_pos(result)
     }
 
-    fn shoot(&mut self, boss: &Boss, ship: &Ship) -> Option<Vec<Shot>> {
-        shoot_down(&mut self, &boss, TARGETED_STAGE_SHOOTING_INTERVAL)
+    fn shoot(&mut self, boss_shape: &Shape, ship: &Ship) -> Option<Vec<Shot>> {
+        shoot_down(&mut self.shoot_time, &boss_shape, TARGETED_STAGE_SHOOTING_INTERVAL)
     }
 
     fn completed(&self, boss: &Boss) -> bool {

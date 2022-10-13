@@ -1,10 +1,16 @@
 use crate::math::{Rect, Vec2i};
 
-static mut g_screen_size: Vec2i = Vec2i { x: 0, y: 0};
+static mut G_SCREEN_SIZE: Vec2i = Vec2i { x: 0, y: 0};
+
+pub fn set_screen_size(size: Vec2i) {
+    unsafe {
+        G_SCREEN_SIZE = size;
+    }
+}
 
 pub fn screen_size() -> Vec2i {
     unsafe {
-        return g_screen_size.clone();
+        return G_SCREEN_SIZE.clone();
     }
 }
 

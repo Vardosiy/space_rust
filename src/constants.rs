@@ -12,6 +12,7 @@ pub const COMET_SHARD_MAX_ANGLE_DELTA: i32 = 30;
 
 // player ship
 pub const SHIP_MAX_HP: i32 = 100;
+pub const SHIP_MOVE_STEP: i32 = 5;
 
 pub const MAX_SHOTS: i32 = 15;
 pub const SHOT_SPEED: i32 = 25;

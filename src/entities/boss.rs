@@ -56,11 +56,10 @@ impl Boss {
     }
 
     pub fn fly(&mut self, ship: &Ship) {
-        let new_pos = self.stage.calc_new_pos(&self, &ship);
-        self.set_pos(new_pos);
+        self.stage.update_pos(&mut self.shape, &ship)
     }
 
     pub fn shoot(&mut self, ship: &Ship) -> Option<Vec<Shot>> {
-        self.stage.shoot(&self, &ship)
+        self.stage.shoot(&self.shape, &ship)
     }
 }
